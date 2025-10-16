@@ -1,5 +1,5 @@
 import { build } from "tsup";
-import { createStripPlugin } from "../ext/jinx-rust/scripts/utils/build";
+import { createStripPlugin } from "../ext/jinx-rust/scripts/utils/build.js";
 
 await build({
 	dts: true,
