@@ -17,3 +17,7 @@ node_modules
 /extension/index.*
 *.vsix
 /crate/target
+
+# dist & editor config
+/dist
+/.kilocode

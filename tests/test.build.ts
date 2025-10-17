@@ -1,12 +1,12 @@
 import { exec } from "node:child_process";
 import { inspect, promisify } from "node:util";
 import prettier from "prettier";
-import { testBuilds } from "../ext/jinx-rust/scripts/utils/build";
+import { testBuilds } from "../ext/jinx-rust/scripts/utils/build.js";
 // import * as plugin_esm from "../index.js";
-import plugin from "../src/index";
+import plugin from "../src/index.js";
 
 // test esm import
-await promisify(exec)('node -e "import(`./index.js`)"');
+await promisify(exec)('node -e "import(\'./index.js\')"');
 
 testBuilds(
 	plugin,

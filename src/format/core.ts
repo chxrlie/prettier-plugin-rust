@@ -1010,6 +1010,22 @@ export function is_MemberAccessLike(node: Node): node is ExpressionPath | Member
 	}
 }
 type ChainItem = { node: Node; printed: Doc; needsParens: boolean };
+
+// Optimize: Extract helper to reduce function size
+function shouldUseExpandedFormat(
+	nodeHasComment: boolean,
+	callExpressions: (CallExpression | CallLikeMacroInvocation)[],
+	printedGroups: Doc[],
+	lastGroupWillBreak: boolean
+): boolean {
+	return (
+		nodeHasComment ||
+		(callExpressions.length > 2 && callExpressions.some((expr) => expr.arguments.some((arg) => !isSimpleCallArgument(arg, 0)))) ||
+		printedGroups.slice(0, -1).some(willBreak) ||
+		lastGroupWillBreak
+	);
+}
+
 function printMemberChain(print: print<CallExpression>, node: CallExpression) {
 	const parent = getParentNode();
 	const isExpressionStatement = !parent || is_ExpressionStatement(parent);
@@ -1043,13 +1059,16 @@ function printMemberChain(print: print<CallExpression>, node: CallExpression) {
 	];
 
 	const callExpressions = printedNodes.map(({ node }) => node).filter(is_CallExpression_or_CallLikeMacroInvocation);
-	const result: Doc =
-		nodeHasComment ||
-		(callExpressions.length > 2 && callExpressions.some((expr) => expr.arguments.some((arg) => !isSimpleCallArgument(arg, 0)))) ||
-		printedGroups.slice(0, -1).some(willBreak) ||
+	const useExpanded = shouldUseExpandedFormat(
+		nodeHasComment,
+		callExpressions,
+		printedGroups,
 		lastGroupWillBreakAndOtherCallsHaveFunctionArguments()
-			? group(expanded)
-			: [shouldHaveEmptyLineBeforeIndent || willBreak(oneLine) ? breakParent : "", conditionalGroup([oneLine, expanded])];
+	);
+	
+	const result: Doc = useExpanded
+		? group(expanded)
+		: [shouldHaveEmptyLineBeforeIndent || willBreak(oneLine) ? breakParent : "", conditionalGroup([oneLine, expanded])];
 
 	return label("member-chain", result);
 
@@ -1237,16 +1256,23 @@ function printMemberChain(print: print<CallExpression>, node: CallExpression) {
 	}
 }
 
-function isSimpleCallArgument(node: Node, depth: number) {
+// Optimize: Cache depth checks and use early returns
+function isSimpleCallArgument(node: Node, depth: number): boolean {
 	if (depth >= 2) return false;
 
-	if (is_IdentifierOrIndex(node)) {
+	const nodeType = node.nodeType;
+	
+	// Fast path for most common cases
+	if (nodeType === NodeType.Identifier || nodeType === NodeType.Index) {
 		return true;
 	}
 
 	if (is_Literal(node)) {
 		return !is_LiteralStringLike(node) || !node.value.includes("\n");
 	}
+
+	const nextDepth = depth + 1;
+	const isChildSimple = (child: Node) => isSimpleCallArgument(child, nextDepth);
 
 	if (is_ArrayOrTupleLiteral(node)) {
 		return node.items.every(isChildSimple);
@@ -1291,10 +1317,6 @@ function isSimpleCallArgument(node: Node, depth: number) {
 	}
 
 	return false;
-
-	function isChildSimple(child: Node) {
-		return isSimpleCallArgument(child, depth + 1);
-	}
 }
 function isLongCurriedCallExpression(node: Node) {
 	const parent = getParentNode(node)!;
@@ -1817,8 +1839,8 @@ export function printFlowControlExpression<T extends ReturnExpression | BreakExp
 	function hasLeadingComment(node: Node) {
 		if (hasLeadingOwnLineComment(node)) return true;
 		if (hasNakedLeftSide(node)) {
-			let leftMost = node;
-			while ((leftMost = getLeftSide(leftMost))) {
+			let leftMost: Node = node;
+			while ((leftMost = getLeftSide(leftMost) as Node)) {
 				if (hasLeadingOwnLineComment(leftMost)) return true;
 			}
 		}
@@ -1831,8 +1853,8 @@ export function flowControlExpressionNeedsOuterParens(flow: ReturnExpression | B
 		(function hasLeadingComment(node: Node) {
 			if (hasLeadingOwnLineComment(node)) return true;
 			if (hasNakedLeftSide(node)) {
-				let leftMost = node;
-				while ((leftMost = getLeftSide(leftMost))) {
+				let leftMost: Node = node;
+				while ((leftMost = getLeftSide(leftMost) as Node)) {
 					if (hasLeadingOwnLineComment(leftMost)) return true;
 				}
 			}

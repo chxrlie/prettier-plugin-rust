@@ -2,16 +2,12 @@
 	"extends": "./tsconfig.base.json",
 	"include": ["src"],
 	"compilerOptions": {
-		// "declaration": true,
-		// "declarationDir": "dist",
-		// "emitDeclarationOnly": true,
-
-		// "outDir": "dist",
-		// "rootDir": "src",
-		// "rootDirs": ["src", "dist"],
 		"composite": false,
 		"isolatedModules": false,
-		"preserveConstEnums": false
-		// "removeComments": false
+		"preserveConstEnums": false,
+		"removeComments": true,
+		"inlineSourceMap": false,
+		"sourceMap": false,
+		"declaration": false
 	}
 }

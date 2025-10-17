@@ -2,11 +2,12 @@
   <img alt="Prettier Rust" height="256px" src="https://user-images.githubusercontent.com/109366411/181039409-b66d6a4c-bbc7-4fbb-8a79-d7bb1af87a63.png">
 </div>
 
-<h1 align="center">Prettier Rust</h1>
+<h1 align="center">Prettier Rust Fork</h1>
 
 <div align="center">
 
-![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg) [![npm version](https://img.shields.io/npm/v/prettier-plugin-rust.svg?style=flat)](https://www.npmjs.com/package/prettier-plugin-rust) [![extension installs](https://img.shields.io/visual-studio-marketplace/i/jinxdash.prettier-rust?logo=visualstudiocode&style=social)](https://marketplace.visualstudio.com/items?itemName=jinxdash.prettier-rust) ![GitHub Repo stars](https://img.shields.io/github/stars/jinxdash/prettier-plugin-rust?style=social) [![Twitter Follow](https://img.shields.io/twitter/follow/jinxdash?style=social)](https://twitter.com/jinxdash)
+![GitHub License](https://img.shields.io/github/license/chxrlie/prettier-plugin-rust?style=for-the-badge&logo=gnu&label=GNU)
+[![npm version](https://img.shields.io/npm/v/prettier-plugin-rust-fork.svg?style=for-the-badge)](https://www.npmjs.com/package/prettier-plugin-rust-fork) [![extension installs](https://img.shields.io/visual-studio-marketplace/i/jinxdash.prettier-rust?logo=visualstudiocode&style=social)](https://marketplace.visualstudio.com/items?itemName=jinxdash.prettier-rust) ![GitHub Repo stars](https://img.shields.io/github/stars/jinxdash/prettier-plugin-rust?style=social)
 
 _The massively popular [Prettier](https://prettier.io/) code formatter, now with [Rust](https://www.rust-lang.org/) support!_
 

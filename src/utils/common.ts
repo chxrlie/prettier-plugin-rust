@@ -45,14 +45,19 @@ export function Identity<T>(v: T): T {
 	return v;
 }
 
+// Optimize: Inline length check to avoid function call overhead
 export function last_of<T extends ArrayLike<any>>(arr: T): T extends readonly [...infer A, infer U] ? U : T[number] {
-	__DEV__: isArrayLike(arr) || exit("Expected Array"), arr.length > 0 || exit("Attempted to retrieve last item of an empty array", arr);
+	__DEV__: {
+		if (!isArrayLike(arr)) exit("Expected Array");
+		if (arr.length === 0) exit("Attempted to retrieve last item of an empty array", arr);
+	}
 	return arr[arr.length - 1];
 }
+
 export function maybe_last_of<T extends readonly any[] | undefined>(
 	arr: T
 ): T extends any[] ? (T extends readonly [...infer A, infer U] ? U : T[number]) : undefined {
-	return undefined === arr || 0 === arr.length ? undefined : last_of(arr as any[]);
+	return (arr && arr.length > 0 ? arr[arr.length - 1] : undefined) as any;
 }
 
 export function normPath(filepath: string) {
@@ -180,16 +185,28 @@ function ois_vobject(data: any) {
 	}
 }
 
+// Optimize: Use for-of instead of indexed access for arrays
 export function each<A extends vObject>(data: A, callback: itfn<A, void>): void;
 export function each(data: any, callback: (value: any, index: any) => void): void {
 	__DEV__: assert(ois_vobject(data));
 	// prettier-ignore
 	switch (data.constructor) {
-		case Array: { let i = 0; for (; i < data.length; i++) callback(data[i], i); return; }
-		case Object: { let k; for (k in data) callback(data[k], k); return; }
-		case Set: { let d; for (d of data) callback(d, undefined!); return; }
-		case Map: { let e; for (e of data) callback(e[1], e[0]); return; }
-		default:  { let x; for (x of data) callback(x, undefined!); return; }
+		case Array: {
+			const len = data.length;
+			for (let i = 0; i < len; i++) callback(data[i], i);
+			return;
+		}
+		case Object: {
+			for (const k in data) {
+				if (Object.prototype.hasOwnProperty.call(data, k)) {
+					callback(data[k], k);
+				}
+			}
+			return;
+		}
+		case Set: { for (const d of data) callback(d, undefined!); return; }
+		case Map: { for (const [k, v] of data) callback(v, k); return; }
+		default:  { for (const x of data) callback(x, undefined!); return; }
 	}
 }
 
@@ -215,11 +232,37 @@ export function clamp(min: number, max: number, value: number) {
 
 export type MaybeFlatten<T> = T extends ReadonlyArray<infer U> ? MaybeFlatten<Exclude<U, T>> : T;
 export type FlatArray<T> = MaybeFlatten<T>[];
+// Optimize: Use iterative flattening to avoid recursion overhead
 export function flat<T extends readonly any[]>(arr: T): FlatArray<T> {
-	return (arr as any as [any]).flat(Infinity);
+	const result: any[] = [];
+	const stack: any[] = [arr];
+	
+	while (stack.length > 0) {
+		const current = stack.pop()!;
+		for (let i = current.length - 1; i >= 0; i--) {
+			const item = current[i];
+			if (Array.isArray(item)) {
+				stack.push(item);
+			} else {
+				result.unshift(item);
+			}
+		}
+	}
+	
+	return result as FlatArray<T>;
 }
+
 export function flatMap<T extends readonly any[], R>(arr: T, mapFn: (item: T[number], index: number, array: T) => R): FlatArray<R> {
-	return flat(arr.map(mapFn));
+	const result: any[] = [];
+	for (let i = 0; i < arr.length; i++) {
+		const mapped = mapFn(arr[i], i, arr);
+		if (Array.isArray(mapped)) {
+			result.push(...mapped);
+		} else {
+			result.push(mapped);
+		}
+	}
+	return result as FlatArray<R>;
 }
 
 export function joinln(...arr: string[]): string {

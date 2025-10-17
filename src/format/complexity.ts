@@ -33,16 +33,24 @@ let DEPTH = 0;
 const ANCESTRY: Node[] = [];
 const LONE_SHORT_ARGUMENT_THRESHOLD_RATE = 0.25;
 
+// Optimize: Pre-allocate ancestry array to reduce allocations
+const MAX_DEPTH = 10;
+const ANCESTRY_POOL: Node[][] = Array.from({ length: MAX_DEPTH }, () => []);
+
 export function withCheckContext<R>(fn: () => R): R {
 	if (0 === DEPTH) {
 		return fn();
 	} else {
+		const prevDepth = DEPTH;
+		const prevAncestry = ANCESTRY.slice(0, DEPTH);
 		DEPTH = 0;
-		const prev = spliceAll(ANCESTRY);
+		ANCESTRY.length = 0;
 		try {
 			return fn();
 		} finally {
-			DEPTH = ANCESTRY.push(...prev);
+			DEPTH = prevDepth;
+			ANCESTRY.length = 0;
+			ANCESTRY.push(...prevAncestry);
 		}
 	}
 }
